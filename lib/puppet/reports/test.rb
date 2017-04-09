@@ -2,6 +2,7 @@ require 'puppet'
 require 'puppet/indirector/face'
 require 'json'
 require 'yaml'
+#require 'activesupport'
 Puppet::Reports.register_report(:test) do
 
 desc <<-DESC
@@ -16,7 +17,9 @@ DESC
     input_json.each do |resource|
       Puppet.notice "hello #{resource}"
       resource_json = {}
-      resource_json << resource[:title]
+      resource_json << resource.select { |key, value| key.to_s.match(/title/) }
+#      resource_json << resource[:@title]
+#      resource_json << resource.slice(:title)
       Puppet.notice "#{resource_json}"
       output_json << resource_json
     end
