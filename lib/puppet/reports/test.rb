@@ -12,16 +12,26 @@ DESC
   def process
     Puppet.notice "Puppet Test #{self.kind} run on #{self.host} ended with status #{self.status}"
     Puppet.notice "Report statuses #{self.resource_statuses.values.find_all { |a| a.changed }.to_yaml}"
-    input_json = YAML::load(self.resource_statuses.values.find_all { |a| a.changed }.to_yaml)
-    Puppet.notice "#{input_json}"
-    input_json.each do |resource|
+    input_yaml = YAML::load(self.resource_statuses.values.find_all { |a| a.changed }.to_yaml)
+    Puppet.notice "#{input_yaml}"
+    output_json = []
+    input_yaml.each do |resource|
       Puppet.notice "hello #{resource}"
       resource_json = {}
-      resource_json << resource.select { |key, value| key.to_s.match(/title/) }
-#      resource_json << resource[:@title]
-#      resource_json << resource.slice(:title)
+      resource_json["title"] = resource.title
+      resource_json["file"] = resource.file
+      resource_json["line"] = resource.line
+      resource_json["tags"] = JSON.parse(resource.tags.to_json)
+      resource_json["type"] = resource.resource_type
+      events_json = JSON.parse(resource.events.to_json)
+      Puppet.notice "#{events_json}"
+      parameters_json = {}
+      events_json.each do |event|
+        parameters_json["#{event['property']}"] = event['previous_value']
+      end
+      resource_json["parameters"] = parameters_json
       Puppet.notice "#{resource_json}"
-      output_json << resource_json
+      output_json.push(resource_json)
     end
     Puppet.notice "#{output_json}"
     output_file = File.open('/tmp/test.json', 'w+')
