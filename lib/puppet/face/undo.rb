@@ -44,10 +44,15 @@ Puppet::Face.define(:undo, '0.0.1') do
       output_file.write(catalog)
       output_file.close
       env = Puppet.lookup(:environments).get(Puppet[:environment])
-#      env = "Production" #Puppet.lookup(:current_environment)
       Puppet.override(:current_environment => env, :loaders => Puppet::Pops::Loaders.new(env)) do
+        begin
+          catalog = Puppet::Resource::Catalog.convert_from(Puppet::Resource::Catalog.default_format,catalog)
+          catalog = Puppet::Resource::Catalog.pson_create(catalog) unless catalog.is_a?(Puppet::Resource::Catalog)
+        rescue => detail
+          raise Puppet::Error, "Could not deserialize catalog from pson: #{detail}", detail.backtrace
+        end
         configurer = Puppet::Configurer.new
-        configurer.run(:catalog => catalog, :pluginsync => false)
+        configurer.run(:catalog => catalog.to_ral, :pluginsync => false)
       end
     end
   end
